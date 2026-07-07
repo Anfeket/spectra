@@ -8,6 +8,8 @@ Unlike a standard FFT-based visualizer, spectra bins energy directly onto
 musical notes using logarithmically-spaced kernels, so the bars line up with
 actual pitches rather than evenly-spaced linear frequency bins.
 
+<img width="1396" height="720" alt="preview" src="https://github.com/user-attachments/assets/bb34d7de-559f-4bdf-b114-69c0b1673fd6" />
+
 ## How it works
 
 ```
