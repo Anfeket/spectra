@@ -7,15 +7,17 @@ use wgpu::{
 };
 use winit::event::WindowEvent;
 use winit::event_loop::ControlFlow;
+use winit::keyboard::KeyCode::KeyQ;
+use winit::keyboard::PhysicalKey;
 use winit::{
     application::ApplicationHandler, dpi::PhysicalSize, event_loop::OwnedDisplayHandle,
     window::Window,
 };
 
 use crate::analysis::N_NOTES;
-use crate::frame::{AudioFrame, SharedFrame};
+use crate::frame::SharedFrame;
 
-static DECAY: f32 = 0.9;
+static DECAY: f32 = 0.6;
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -41,6 +43,7 @@ struct State {
     smooth_energy: [f32; crate::analysis::N_NOTES],
     frame_count: usize,
     last_fps_update: std::time::Instant,
+    decay: f32,
 }
 
 const fn note_color(i: usize) -> [f32; 3] {
@@ -60,11 +63,10 @@ const fn note_color(i: usize) -> [f32; 3] {
     [r, g, b]
 }
 
-fn build_instances(frame: &AudioFrame) -> Vec<BarInstance> {
+fn build_instances(energy: &[f32; N_NOTES]) -> Vec<BarInstance> {
     let bar_w = 1.0 / crate::analysis::N_NOTES as f32;
     let max_energy = 300.0;
-    frame
-        .note_energy
+    energy
         .iter()
         .enumerate()
         .map(|(i, &e)| BarInstance {
@@ -191,6 +193,7 @@ impl State {
             instance_buffer,
             frame_count: 0,
             last_fps_update: std::time::Instant::now(),
+            decay: DECAY,
         };
 
         state.configure_surface();
@@ -255,9 +258,9 @@ impl State {
         let frame = self.shared.load();
         for i in 0..crate::analysis::N_NOTES {
             self.smooth_energy[i] =
-                self.smooth_energy[i] * DECAY + frame.note_energy[i] * (1.0 - DECAY);
+                self.smooth_energy[i] * self.decay + frame.note_energy[i] * (1.0 - self.decay);
         }
-        let instances = build_instances(&frame);
+        let instances = build_instances(&self.smooth_energy);
 
         self.queue
             .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
@@ -344,6 +347,22 @@ impl ApplicationHandler for App {
             }
             WindowEvent::Resized(new_size) => {
                 state.resize(new_size);
+            }
+            WindowEvent::KeyboardInput {
+                event,
+                device_id: _,
+                is_synthetic: _,
+            } => {
+                if let winit::event::ElementState::Pressed = event.state {
+                    if let PhysicalKey::Code(KeyQ) = event.physical_key {
+                        event_loop.exit();
+                    }
+                }
+            }
+            WindowEvent::MouseWheel { device_id, delta, phase } => {
+                if let winit::event::MouseScrollDelta::LineDelta(_, y) = delta {
+                    state.decay = (state.decay + y * 0.05).clamp(0.0, 1.0);
+                }
             }
             _ => {}
         }
