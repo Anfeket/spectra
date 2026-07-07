@@ -1,0 +1,14 @@
+[package]
+name = "spectra"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+arc-swap = "1.9.1"
+bytemuck = { version = "1.25.0", features = ["derive"] }
+cpal = "0.18.1"
+pollster = "0.4.0"
+rtrb = "0.3.4"
+rustfft = "6.4.1"
+wgpu = "30.0.0"
+winit = "0.30.13"
