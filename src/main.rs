@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod analysis;
 mod audio;
 mod frame;
